@@ -62,9 +62,9 @@ class BBCSoundsDataset(RecDataset):
         train_filepath = os.path.join(cache_dir, "train.ndjson")
 
         if not os.path.exists(train_filepath) or self.force_download:
-            download_file(BBC_SOUNDS_TRAIN_GCP_URL, train_filepath)
+            download_with_progress(BBC_SOUNDS_TRAIN_GCP_URL, train_filepath)
         if not os.path.exists(test_filepath) or self.force_download:
-            download_file(BBC_SOUNDS_TEST_GCP_URL, test_filepath)
+            download_with_progress(BBC_SOUNDS_TEST_GCP_URL, test_filepath)
 
         def _format_data(filename):
             """
@@ -134,13 +134,11 @@ class MovieLensDataset(RecDataset):
                 zip_file.extractall(temp_dir)
             with open(os.path.join(temp_dir, "dataset.json")) as f:
                 data = json.load(f)
-        print(data['catalog'])
+
         self._x_train = data["x_train"]
         self._y_train = None
         self._x_test = data["x_test"]
-        print(self._x_test[0:2])
         self._y_test = data["y_test"]
-        print(self._y_test[0:2])
         self._catalog = self._convert_catalog_keys(data["catalog"])
 
     def _convert_catalog_keys(self, catalog):
