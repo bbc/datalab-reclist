@@ -7,7 +7,7 @@ from reclist.utils.config import *
 from itertools import groupby
 
 
-class BBCSoundsSampledDataset(RecDataset):
+class BBCSoundsDataset(RecDataset):
     """
     BBC Sounds September 2021 Dataset
 
@@ -134,11 +134,13 @@ class MovieLensDataset(RecDataset):
                 zip_file.extractall(temp_dir)
             with open(os.path.join(temp_dir, "dataset.json")) as f:
                 data = json.load(f)
-
+        print(data['catalog'])
         self._x_train = data["x_train"]
         self._y_train = None
         self._x_test = data["x_test"]
+        print(self._x_test[0:2])
         self._y_test = data["y_test"]
+        print(self._y_test[0:2])
         self._catalog = self._convert_catalog_keys(data["catalog"])
 
     def _convert_catalog_keys(self, catalog):
