@@ -1,7 +1,11 @@
 import collections
+import json
+
 from reclist.abstractions import RecList, rec_test
 from typing import List
 import random
+
+RESOURCE_METADATA_PATH = '/Users/piscoa01/Downloads/bbc-datalab-sounds-pesquet_dataset_2021-09_item_metadata_210930_all_items_enriched.ndjson'
 
 
 class CoveoCartRecList(RecList):
@@ -369,68 +373,159 @@ class BBCSoundsSimilarItemRecList(RecList):
 
 class BBCSoundsRecList(RecList):
 
+    def __init__(self, model, dataset, y_preds):
+        super().__init__(model, dataset, y_preds)
+        self.resource_metadata = None
+
     def resourceid_only(self, resource_ids):
         return [[x["resourceId"] for x in y] for y in resource_ids]
 
-    @rec_test(test_type='HR@10')
-    def hit_rate_at_k(self):
-        """
-        Compute the rate at which the top-k predictions contain the item to be predicted
-        """
-        from reclist.metrics.standard_metrics import hit_rate_at_k
-        return hit_rate_at_k(
-            self.resourceid_only(self._y_preds),
-            self.resourceid_only(self._y_test),
-            k=10
-        )
+    def load_resource_metadata(self):
+        # load resource metadata
+        enriched_items_path = RESOURCE_METADATA_PATH
+        with open(enriched_items_path, 'r') as f:
+            enriched_items = [json.loads(line) for line in f]
+        self.resource_metadata = enriched_items
 
-    @rec_test(test_type='hits_distribution_custom')
-    def hits_distribution_custom(self):
-        """
-        Compute the distribution of hit-rate across item frequency in training data
-        """
-        from reclist.metrics.hits import hits_distribution_custom
-        return hits_distribution_custom(
-            self.resourceid_only(self._x_train),
-            self.resourceid_only(self._y_test),
-            self.resourceid_only(self._y_preds),
-            k=10,
-            debug=True
-        )
+    # @rec_test(test_type='HR@10')
+    # def hit_rate_at_k(self):
+    #     """
+    #     Compute the rate at which the top-k predictions contain the item to be predicted
+    #     """
+    #     from reclist.metrics.standard_metrics import hit_rate_at_k
+    #     return hit_rate_at_k(
+    #         self.resourceid_only(self._y_preds),
+    #         self.resourceid_only(self._y_test),
+    #         k=10
+    #     )
+    #
+    #
+    # @rec_test(test_type='hits_distribution_custom')
+    # def hits_distribution_custom(self):
+    #     """
+    #     Compute the distribution of hit-rate across item frequency in training data
+    #     """
+    #     from reclist.metrics.hits import hits_distribution_custom
+    #     return hits_distribution_custom(
+    #         self.resourceid_only(self._x_train),
+    #         self.resourceid_only(self._y_test),
+    #         self.resourceid_only(self._y_preds),
+    #         k=10,
+    #         debug=True
+    #     )
+    #
+    # @rec_test(test_type="hits_distribution_by_agerange")
+    # def hits_distribution_by_agerange(self):
+    #     """
+    #     Compute the distribution of hit-rate across age ranges in testing data
+    #     """
+    #     from reclist.metrics.hits import hits_distribution_by_agerange
+    #     return hits_distribution_by_agerange(
+    #         self._y_test,
+    #         self._y_preds,
+    #         debug=True
+    #     )
+    #
+    # @rec_test(test_type="hits_distribution_by_gender")
+    # def hits_distribution_by_gender(self):
+    #     """
+    #     Compute the distribution of hit-rate across gender types in testing data
+    #     """
+    #     from reclist.metrics.hits import hits_distribution_by_gender
+    #     return hits_distribution_by_gender(
+    #         self._y_test,
+    #         self._y_preds,
+    #         debug=True
+    #     )
+    #
+    # @rec_test(test_type='Popularity@10')
+    # def popularity_bias_at_k(self):
+    #     """
+    #     Compute average frequency of occurrence across recommended items in training data
+    #     """
+    #     from reclist.metrics.standard_metrics import popularity_bias_at_k
+    #     return popularity_bias_at_k(self.resourceid_only(self._y_preds),
+    #                                 self.resourceid_only(self._x_train),
+    #                                 k=10)
+    #
+    # @rec_test(test_type='error_by_cosine_distance_all_items')
+    # def error_by_cosine_distance_all(self):
+    #     """
+    #      Compute the distribution of prediction to ground truth error
+    #     """
+    #     from reclist.metrics.distance_metrics import error_by_cosine_distance_all_items
+    #     return error_by_cosine_distance_all_items(self.rec_model,
+    #                                               self.resourceid_only(self._y_test),
+    #                                               self.resourceid_only(self._y_preds), k=10, bins=25, debug=True)
 
-    @rec_test(test_type="hits_distribution_by_agerange")
-    def hits_distribution_by_agerange(self):
+    @rec_test(test_type="genre_distribution_by_gender")
+    def genre_distribution_by_gender(self):
         """
-        Compute the distribution of hit-rate across age ranges in testing data
+        Compute the distribution of genres in predictions across gender in testing data
         """
-        from reclist.metrics.hits import hits_distribution_by_agerange
-        return hits_distribution_by_agerange(
+        from reclist.metrics.metadata_distribution import genre_distribution_by_gender
+        if not self.resource_metadata:
+            self.load_resource_metadata()
+        return genre_distribution_by_gender(
+            self.resource_metadata,
             self._y_test,
             self._y_preds,
+            k=25,
+            top_genres=10,
             debug=True
         )
 
-    @rec_test(test_type="hits_distribution_by_gender")
-    def hits_distribution_by_gender(self):
+    @rec_test(test_type="genre_distribution_by_agerange")
+    def genre_distribution_by_agerange(self):
         """
-        Compute the distribution of hit-rate across gender types in testing data
+        Compute the distribution of genres in predictions across gender in testing data
         """
-        from reclist.metrics.hits import hits_distribution_by_gender
-        return hits_distribution_by_gender(
+        from reclist.metrics.metadata_distribution import genre_distribution_by_agerange
+        if not self.resource_metadata:
+           self.load_resource_metadata()
+        return genre_distribution_by_agerange(
+            self.resource_metadata,
             self._y_test,
             self._y_preds,
+            k=25,
+            top_genres=10,
             debug=True
         )
 
-    @rec_test(test_type='Popularity@10')
-    def popularity_bias_at_k(self):
+    @rec_test(test_type="masterbrand_distribution_by_gender")
+    def masterbrand_distribution_by_gender(self):
         """
-        Compute average frequency of occurrence across recommended items in training data
+        Compute the distribution of mastrbrands in predictions across gender in testing data
         """
-        from reclist.metrics.standard_metrics import popularity_bias_at_k
-        return popularity_bias_at_k(self.resourceid_only(self._y_preds),
-                                    self.resourceid_only(self._x_train),
-                                    k=10)
+        from reclist.metrics.metadata_distribution import masterbrand_distribution_by_gender
+        if not self.resource_metadata:
+            self.load_resource_metadata()
+        return masterbrand_distribution_by_gender(
+            self.resource_metadata,
+            self._y_test,
+            self._y_preds,
+            k=25,
+            top_masterbrands=5,
+            debug=True
+        )
+
+    @rec_test(test_type="masterbrand_distribution_by_agerange")
+    def masterbrand_distribution_by_agerange(self):
+        """
+        Compute the distribution of mastrbrands in predictions across age range in testing data
+        """
+        from reclist.metrics.metadata_distribution import masterbrand_distribution_by_agerange
+        if not self.resource_metadata:
+            self.load_resource_metadata()
+        return masterbrand_distribution_by_agerange(
+            self.resource_metadata,
+            self._y_test,
+            self._y_preds,
+            k=25,
+            top_masterbrands=5,
+            debug=True
+        )
+
 
     @rec_test(test_type='freq_of_recommended_items_at_k')
     def rec_items_distribution_at_k(self):
