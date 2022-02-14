@@ -448,7 +448,8 @@ class BBCSoundsRecList(RecList):
         from reclist.metrics.novelty import shannon_entropy_at_k_user_differential
         return shannon_entropy_at_k_user_differential(self._y_test,
                                                       self.resourceid_only(self._y_preds),
-                                                      k=10, user_feature='gender')
+                                                      k=10, user_feature='gender',
+                                                      debug=True)
 
     @rec_test(test_type='GiniIndex@10')
     def gini_index_at_k(self):
@@ -477,7 +478,8 @@ class BBCSoundsRecList(RecList):
         return gini_index_at_k_user_differential(self.resourceid_only(self._y_preds),
                                                  self._y_test,
                                                  self.product_data,
-                                                 k=10)
+                                                 k=10,
+                                                 debug=True)
 
     @rec_test(test_type='Coverage@10')
     def coverage_at_k(self):
@@ -515,7 +517,8 @@ class BBCSoundsRecList(RecList):
         return novelty_at_k_user_differential(self._x_train,
                                               self._y_test,
                                               self.resourceid_only(self._y_preds),
-                                              k=10, user_feature='age_range')
+                                              k=10, user_feature='age_range',
+        debug=True)
 
 
     @rec_test(test_type='NDCG@10')

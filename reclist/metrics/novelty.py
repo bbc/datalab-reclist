@@ -1,5 +1,6 @@
 """ Collection of novelty-based metrics """
 from collections import defaultdict
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -18,15 +19,17 @@ def gini_index_at_k(y_preds, candidate_list, k: int=10, debug: bool=False) -> fl
     gini_index /= no_items
     return gini_index
 
+
 def gini_index_at_k_user_differential(y_preds, y_test, candidate_list, k=10,
                                       debug=False, user_feature='age_range', **kwargs):
     breakdown = _breakdown_preds_by_user_feature(y_test, y_preds,
                                                  user_feature=user_feature)
-
-    return _apply_func_to_breakdown(gini_index_at_k, breakdown, candidate_list,
+    retval = _apply_func_to_breakdown(gini_index_at_k, breakdown, candidate_list,
                                     k=k, debug=debug)
-    return {key: gini_index_at_k(val, candidate_list, k=k, debug=debug, **kwargs)
-            for key, val in sorted(breakdown.items(), key=lambda x:x[0])}
+    if debug:
+        plot_results_breakdown(retval, f"GiniIndex@{k}_by_{user_feature}.pdf", f"GiniIndex@{k}",
+                               xmin=0, xmax=1)
+    return retval
 
 
 def shannon_entropy_at_k(y_preds, k: int=10, debug: bool=False) -> float:
@@ -44,10 +47,12 @@ def shannon_entropy_at_k_user_differential(y_test, y_preds, k=10,
                                            debug=False, user_feature='gender', **kwargs):
     breakdown = _breakdown_preds_by_user_feature(y_test, y_preds,
                                                  user_feature=user_feature)
-
-    return _apply_func_to_breakdown(shannon_entropy_at_k, breakdown,
+    retval = _apply_func_to_breakdown(shannon_entropy_at_k, breakdown,
                                     k=k, debug=debug)
 
+    if debug:
+        plot_results_breakdown(retval, f"ShannonEntropy@{k}_by_{user_feature}.pdf", f"ShannonEntropy@{k}")
+    return retval
 
 def novelty_at_k(y_preds, x_train, k=10, debug=False):
     all_inters = []
@@ -76,7 +81,10 @@ def novelty_at_k_user_differential(x_train, y_test, y_preds, k=10,
                                    debug=False, user_feature='gender', **kwargs):
     breakdown = _breakdown_preds_by_user_feature(y_test, y_preds,
                                                  user_feature=user_feature)
-    return _apply_func_to_breakdown(novelty_at_k, breakdown, x_train, k=k, debug=debug)
+    retval = _apply_func_to_breakdown(novelty_at_k, breakdown, x_train, k=k, debug=debug)
+    if debug:
+        plot_results_breakdown(retval, f"Novelty@{k}_by_{user_feature}.pdf", f"Novelty@{k}")
+    return retval
 
 
 def personalisation_at_k(y_preds, k=10, debug=False):
@@ -93,7 +101,6 @@ def personalisation_at_k(y_preds, k=10, debug=False):
 
     # iterate over each pair of users and compute similarity
     no_users = len(y_preds)
-    print(no_users)
     no_combinations = no_users*(no_users-1)/2
     user_vector_cache = {}
 
@@ -135,3 +142,16 @@ def _apply_func_to_breakdown(func, breakdown, *args, **kwargs):
     return {key: func(val, *args, **kwargs)
             for key, val in sorted(breakdown.items(),
                                    key=lambda x:x[0])}
+
+
+def plot_results_breakdown(results, fname, metric, xmin=None, xmax=None):
+    plt.figure()
+    plt.barh(list(results.keys()), list(results.values()))
+    plt.xlabel(metric)
+    if xmin is not None:
+        plt.xlim(left=xmin)
+    if xmax is not None:
+        plt.xlim(right=xmax)
+    plt.grid(alpha=0.5, color='gray', ls=':')
+    plt.savefig(fname)
+    plt.close()
