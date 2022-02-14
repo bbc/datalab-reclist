@@ -178,16 +178,17 @@ def rec_items_distribution_at_k(y_preds, k=3, bin_width=100, debug=True):
 
     if debug:
         f, (ax1, ax2) = plt.subplots(2, 1)
-        ax1.set_title('Frequency of recommending items across users')
 
         # debug / visualization
         ax1.bar(bins[:-1], counts_per_bin_sorted,
                 width=bin_width, align='edge')
 
+        ax1.set_ylabel('Number of items')
         ax2.bar(log_bins[:-1], counts_per_logbin_sorted,
                 width=(log_bins[1:] - log_bins[:-1]), align='edge')
         ax2.set_xscale('log', base=10)
-
+        ax2.set_xlabel('Frequency of being recommended')
+        ax2.set_ylabel('Number of items')
         plt.savefig(os.path.join(current.report_path, 'plots', 'rec_items_distribution_at_k.png'))
 
     return test_results
