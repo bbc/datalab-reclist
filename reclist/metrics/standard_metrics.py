@@ -1,7 +1,13 @@
+import os
 import random
 import itertools
 import numpy as np
 import collections
+import matplotlib.pyplot as plt
+from collections import Counter
+from itertools import chain
+from bisect import bisect_right, bisect_left
+from reclist.current import current
 
 
 def statistics(x_train, y_train, x_test, y_test, y_pred):
@@ -128,3 +134,60 @@ def precision_at_k(y_preds, y_test, k=3):
 def recall_at_k(y_preds, y_test, k=3):
     recall_ls = [len(set(_y).intersection(set(_p[:k]))) / len(_y) if _y else 1 for _p, _y in zip(y_preds, y_test)]
     return np.average(recall_ls)
+
+
+def rec_items_distribution_at_k(y_preds, k=3, bin_width=100, debug=True):
+    def _calculate_hist(frequencies, bins):
+        """ Works out the counts of items in each bucket """
+        counts_per_bin = Counter([bisect_right(bins, item) - 1 for item in frequencies])
+        counts_per_bin_list = list(counts_per_bin.items())
+        empty_bins_indices = [ele for ele in np.arange(len(bins) - 1) if ele not in [
+            index for index, _ in counts_per_bin_list
+        ]]
+        counts_per_bin_list.extend([(index, 0) for index in empty_bins_indices])
+        counts_per_bin_sorted = sorted(counts_per_bin_list, key=lambda x: x[0], reverse=False)
+        return [y for _, y in counts_per_bin_sorted]
+
+    def _format_results(bins, counts_per_bin):
+        """ Formatting results """
+        results = {}
+        for index, (_, count) in enumerate(zip(bins, counts_per_bin)):
+            if bins[index] != bins[index + 1]:
+                results[str(bins[index]) + '-' + str(bins[index + 1] - 1)] = count
+        return results
+
+    # estimate frequency of recommended items in predictions
+    reduce_at_k_preds = [preds[:k] for preds in y_preds]
+    counts = Counter(chain.from_iterable(reduce_at_k_preds))
+
+    frequencies = list(counts.values())
+
+    # fixed bin size
+    bins = np.arange(np.min(frequencies), np.max(frequencies) + bin_width, bin_width)
+    counts_per_bin_sorted = _calculate_hist(frequencies, bins)
+
+    # log bin size
+    log_bins = np.logspace(np.log10(bins[0]), np.log10(bins[-1]), len(bins))
+    log_bins = np.array([int(round(log_bin, 2)) for log_bin in log_bins])
+    counts_per_logbin_sorted = _calculate_hist(frequencies, log_bins)
+
+    test_results = {
+        'histogram_fixed': _format_results(bins, counts_per_bin_sorted),
+        'histogram_log': _format_results(log_bins, counts_per_logbin_sorted)
+    }
+
+    if debug:
+        f, (ax1, ax2) = plt.subplots(2, 1)
+        ax1.set_title('Frequency of recommending items across users')
+
+        # debug / visualization
+        ax1.bar(bins[:-1], counts_per_bin_sorted,
+                width=bin_width, align='edge')
+
+        ax2.bar(log_bins[:-1], counts_per_logbin_sorted,
+                width=(log_bins[1:] - log_bins[:-1]), align='edge')
+        ax2.set_xscale('log', base=10)
+
+        plt.savefig(os.path.join(current.report_path, 'plots', 'rec_items_distribution_at_k.png'))
+
+    return test_results
