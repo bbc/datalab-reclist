@@ -1,7 +1,11 @@
 """ Collection of novelty-based metrics """
 from collections import defaultdict
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
+
+from reclist.current import current
 
 
 def gini_index_at_k(y_preds, candidate_list, k: int=10, debug: bool=False) -> float:
@@ -153,5 +157,5 @@ def plot_results_breakdown(results, fname, metric, xmin=None, xmax=None):
     if xmax is not None:
         plt.xlim(right=xmax)
     plt.grid(alpha=0.5, color='gray', ls=':')
-    plt.savefig(fname)
+    plt.savefig(os.path.join(current.report_path, 'plots', fname))
     plt.close()
