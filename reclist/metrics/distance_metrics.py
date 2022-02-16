@@ -48,7 +48,7 @@ def error_by_cosine_distance(model, y_test, y_preds, k=3, bins=25, debug=False):
     return {'mean': np.mean(cos_distances), 'histogram': histogram}
 
 
-def error_by_cosine_distance_all_items(model, y_test, y_preds, k=3, bins=25, debug=False):
+def error_by_cosine_distance_all_items(model, y_test, y_preds, k=3, bins=25, debug=False, resource_metadata=None):
     if not (hasattr(model.__class__, 'get_vector') and callable(getattr(model.__class__, 'get_vector'))):
         error_msg = "Error : Model {} does not support retrieval of vector embeddings".format(model.__class__)
         print(error_msg)
@@ -57,6 +57,8 @@ def error_by_cosine_distance_all_items(model, y_test, y_preds, k=3, bins=25, deb
     misses = sample_all_misses_at_k(y_preds, y_test, k=k, size=-1)
     user_cos_distances = []
     item_cos_distances = []
+    if resource_metadata:
+        model.enriched_items = resource_metadata
     for m in misses:
         if m['Y_PRED']:
             vectors_test = [model.get_vector(pid) for pid in m['Y_TEST']]
@@ -84,24 +86,21 @@ def error_by_cosine_distance_all_items(model, y_test, y_preds, k=3, bins=25, deb
     # debug / viz
     if debug:
         plt.hist(user_cos_distances, bins=bins)
-        plt.title('dist over cosine distance prod space, avg by user')
+        plt.title(f'Recs to ground truth cosine distance ({model.vectors_type}), avg by user', fontsize=10)
         plt.savefig(os.path.join(current.report_path,
                                  'plots',
                                  'distance_to_predictions_user_avg.png'))
         plt.clf()
-        # plt.show()
 
         plt.hist(item_cos_distances_avg, bins=bins)
-        plt.title('dist over cosine distance prod space, avg by item')
+        plt.title(f'Recs to ground truth cosine distance ({model.vectors_type}), avg by item', fontsize=10)
         plt.savefig(os.path.join(current.report_path,
                                  'plots',
                                  'distance_to_predictions_item_avg.png'))
         plt.clf()
-        # plt.show()
 
     return {'mean': np.average(user_cos_distances),
             'user_histogram': user_histogram, 'item_histogram': item_histogram}
-
 
 
 def distance_to_query(model, x_test, y_test, y_preds, k=3, bins=25, debug=False):

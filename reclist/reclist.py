@@ -5,7 +5,7 @@ from reclist.abstractions import RecList, rec_test
 from typing import List
 import random
 
-RESOURCE_METADATA_PATH = '/Users/piscoa01/Downloads/bbc-datalab-sounds-pesquet_dataset_2021-09_item_metadata_210930_all_items_enriched.ndjson'
+from reclist.utils.config import load_ndjson_from_bucket, BBC_SOUNDS_METADATA
 
 
 class CoveoCartRecList(RecList):
@@ -373,19 +373,19 @@ class BBCSoundsSimilarItemRecList(RecList):
 
 class BBCSoundsRecList(RecList):
 
-    def __init__(self, model, dataset, y_preds):
+    def __init__(self, model, dataset, y_preds, resource_metadata=None, get_model_vectors=False):
         super().__init__(model, dataset, y_preds)
-        self.resource_metadata = None
+        self.resource_metadata = resource_metadata
+        if get_model_vectors:
+            self.rec_model.load_vectors(resource_metadata)
 
     def resourceid_only(self, resource_ids):
         return [[x["resourceId"] for x in y] for y in resource_ids]
 
     def load_resource_metadata(self):
         # load resource metadata
-        enriched_items_path = RESOURCE_METADATA_PATH
-        with open(enriched_items_path, 'r') as f:
-            enriched_items = [json.loads(line) for line in f]
-        self.resource_metadata = enriched_items
+        resource_metadata = load_ndjson_from_bucket(filename=BBC_SOUNDS_METADATA)
+        self.resource_metadata = resource_metadata
 
     @rec_test(test_type='HR@10')
     def hit_rate_at_k(self):
@@ -398,7 +398,6 @@ class BBCSoundsRecList(RecList):
             self.resourceid_only(self._y_test),
             k=10
         )
-
 
     @rec_test(test_type='hits_distribution_custom')
     def hits_distribution_custom(self):
@@ -454,9 +453,12 @@ class BBCSoundsRecList(RecList):
          Compute the distribution of prediction to ground truth error
         """
         from reclist.metrics.distance_metrics import error_by_cosine_distance_all_items
+        if not self.resource_metadata:
+            self.load_resource_metadata()
         return error_by_cosine_distance_all_items(self.rec_model,
                                                   self.resourceid_only(self._y_test),
-                                                  self.resourceid_only(self._y_preds), k=10, bins=25, debug=True)
+                                                  self.resourceid_only(self._y_preds), k=10, bins=25, debug=True,
+                                                  resource_metadata=self.resource_metadata)
 
     @rec_test(test_type="genre_distribution_by_gender")
     def genre_distribution_by_gender(self):
@@ -482,7 +484,7 @@ class BBCSoundsRecList(RecList):
         """
         from reclist.metrics.metadata_distribution import genre_distribution_by_agerange
         if not self.resource_metadata:
-           self.load_resource_metadata()
+            self.load_resource_metadata()
         return genre_distribution_by_agerange(
             self.resource_metadata,
             self._y_test,

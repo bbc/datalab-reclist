@@ -1,5 +1,3 @@
-import json
-
 import numpy as np
 
 from sklearn.decomposition import PCA
@@ -7,27 +5,37 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.preprocessing import OneHotEncoder
 
 
-def generate_metadata_vectors(
-    enriched_items_path='/Users/piscoa01/Downloads/bbc-datalab-sounds-pesquet_dataset_2021-09_item_metadata_210930_all_items_enriched.ndjson',
-    pca=False):
+def extract_bbc_sounds_genres(enriched_items, results_as_list=True):
+    """Extracts genre labels from genres_inherited_first dicts."""
+    # extract genres
+    for item in enriched_items:
+        try:
+            item['genres_labels'] = [g.get('string', '').replace(' ', '-').lower() for g in
+                                     item.get('genres_inherited_first', [])] if results_as_list else ' '.join(
+                [g.get('string', '').replace(' ', '-').lower() for g in item.get('genres_inherited_first', [])])
+        except TypeError:
+            # print(item.get('genres_inherited_first'))
+            item['genres_labels'] = ['NoGenreInfoAvailable'] if results_as_list else 'NoGenreInfoAvailable'
+
+    return enriched_items
+
+
+def generate_genre_dict(enriched_items):
+    return {item['resource_id']: item['genres_labels'] for item in extract_bbc_sounds_genres(enriched_items)}
+
+
+def generate_metadata_vectors(enriched_items, pca=False):
     """
     Generates vectors from BBC Sounds resource metadata.
-    @param enriched_items_path: str, path of an ndjson file containing item metadata.
+    @param enriched_items: list of dicts, containing item metadata
+    @param pca: bool, whether to apply PCA to content vectors
     Only genres and masterbrand are used at the moment.
     @return: Dict resource_id:metadata_vector
 
     """
 
-    with open(enriched_items_path, 'r') as f:
-        enriched_items = [json.loads(line) for line in f]
     # extract genres
-    for item in enriched_items:
-        try:
-            item['genres_labels'] = ' '.join(
-                [g.get('string', '').replace(' ', '-').lower() for g in item.get('genres_inherited_first', [])])
-        except TypeError:
-            # print(item.get('genres_inherited_first'))
-            item['genres_labels'] = 'NoGenreInfoAvailable'
+    enriched_items = extract_bbc_sounds_genres(enriched_items, results_as_list=False)
 
     # We might switch to tf-idf, instead of countvectoriser
     # vectorizer = TfidfVectorizer(strip_accents='unicode')

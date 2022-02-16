@@ -6,6 +6,7 @@ import numpy as np
 from collections import defaultdict, Counter
 
 from reclist.current import current
+from reclist.utils.vectorise_sounds_data import generate_genre_dict
 
 
 def round_up(number):
@@ -18,7 +19,7 @@ def genre_distribution_by_gender(enriched_items, y_test, y_preds, k=10, top_genr
     Calculates the distribution of genres by age in testing data
     """
 
-    genre_dict = extract_bbc_sounds_genres(enriched_items)
+    genre_dict = generate_genre_dict(enriched_items)
 
     genres_per_gender = defaultdict(list)
     genres_count_per_gender = {}
@@ -89,20 +90,6 @@ def genre_distribution_by_gender(enriched_items, y_test, y_preds, k=10, top_genr
     return genres_count_per_gender
 
 
-def extract_bbc_sounds_genres(enriched_items):
-    """Extracts genre labels from genres_inherited_first dicts."""
-    # extract genres
-    for item in enriched_items:
-        try:
-            item['genres_labels'] = [g.get('string', '').replace(' ', '-').lower() for g in
-                                     item.get('genres_inherited_first', [])]
-        except TypeError:
-            # print(item.get('genres_inherited_first'))
-            item['genres_labels'] = ['NoGenreInfoAvailable']
-    genre_dict = {item['resource_id']: item['genres_labels'] for item in enriched_items}
-    return genre_dict
-
-
 def genre_distribution_by_agerange(enriched_items, y_test, y_preds, k=10, top_genres=10,
                                    first_genre_only=False, debug=True):
     """
@@ -110,7 +97,7 @@ def genre_distribution_by_agerange(enriched_items, y_test, y_preds, k=10, top_ge
     """
 
     # extract genres
-    genre_dict = extract_bbc_sounds_genres(enriched_items)
+    genre_dict = generate_genre_dict(enriched_items)
 
     genres_per_age_range = defaultdict(list)
     genres_count_per_age_range = {}
