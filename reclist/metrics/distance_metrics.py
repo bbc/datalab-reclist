@@ -25,12 +25,9 @@ def error_by_cosine_distance(model, y_test, y_preds, k=3, bins=25, debug=False):
         if m['Y_PRED']:
             vector_test = model.get_vector(m['Y_TEST'][0])
             vector_pred = model.get_vector(m['Y_PRED'][0])
-            try:
-                if vector_pred is not None and vector_test is not None:
-                    cos_dist = cosine(vector_pred, vector_test)
-                    cos_distances.append(cos_dist)
-            except ValueError as e:
-                print(e)
+            if vector_pred and vector_test:
+                cos_dist = cosine(vector_pred, vector_test)
+                cos_distances.append(cos_dist)
 
     histogram = np.histogram(cos_distances, bins=bins, density=False)
     # cast to list
