@@ -187,7 +187,7 @@ def rec_items_distribution_at_k(y_preds, k=3, bin_width=100, debug=True):
         ax2.bar(log_bins[:-1], counts_per_logbin_sorted,
                 width=(log_bins[1:] - log_bins[:-1]), align='edge')
         ax2.set_xscale('log', base=10)
-        ax2.set_xlabel('Frequency of being recommended')
+        ax2.set_xlabel('No. of times an item appear in a recs list')
         ax2.set_ylabel('Number of items')
         plt.savefig(os.path.join(current.report_path, 'plots', 'rec_items_distribution_at_k.png'))
 
