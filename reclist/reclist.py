@@ -28,8 +28,8 @@ class CoveoCartRecList(RecList):
                                       y_preds=self.sku_only(self._y_preds),
                                       product_data=self.product_data,
                                       price_sel_fn=lambda x: float(x['price_bucket'])
-                                                             if x['price_bucket']
-                                                             else None
+                                      if x['price_bucket']
+                                      else None
                                       )
 
     @rec_test(test_type='Coverage@10')
@@ -123,7 +123,7 @@ class SpotifySessionRecList(RecList):
         def perturb(session, sub_map):
             last_item = session[-1]
             last_item_artist = self.product_data[last_item['track_uri']]['artist_uri']
-            substitutes = set(sub_map.get(last_item_artist,[])) - {last_item['track_uri']}
+            substitutes = set(sub_map.get(last_item_artist, [])) - {last_item['track_uri']}
             if substitutes:
                 similar_item = random.sample(substitutes, k=1)
                 new_session = session[:-1] + [{"track_uri": similar_item[0]}]
@@ -431,3 +431,16 @@ class BBCSoundsRecList(RecList):
         return popularity_bias_at_k(self.resourceid_only(self._y_preds),
                                     self.resourceid_only(self._x_train),
                                     k=10)
+
+    @rec_test(test_type='freq_of_recommended_items_at_k')
+    def rec_items_distribution_at_k(self):
+        """
+        Computes the frequency of occurrence across recommended items
+        """
+        from reclist.metrics.standard_metrics import rec_items_distribution_at_k
+        return rec_items_distribution_at_k(
+            self.resourceid_only(self._y_preds),
+            k=10,
+            bin_width=100,
+            debug=True
+        )

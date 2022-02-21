@@ -11,7 +11,7 @@ SPOTIFY_PLAYLIST_DATASET_S3_URL = 'https://reclist-datasets-6d3c836d-6djh887d.s3
 MOVIELENS_DATASET_S3_URL = "https://reclist-datasets-6d3c836d-6djh887d.s3.us-west-2.amazonaws.com/movielens_25m.zip"
 BBC_SOUNDS_TRAIN_GCP_URL = "bbc-datalab-sounds-pesquet/dataset/sampled/train/train_1.ndjson"
 BBC_SOUNDS_TEST_GCP_URL = "bbc-datalab-sounds-pesquet/dataset/sampled/test/test.ndjson"
-BBC_SOUNDS_PREDICTIONS = "bbc-datalab-sounds-pesquet/predictions_data/xantus/2022-01-27_13:53:56.json"
+BBC_SOUNDS_PREDICTIONS = "bbc-datalab-sounds-pesquet/predictions_data/xantus/2022-02-14_12:39:27.json"
 
 
 def download_file(blob_path, destination, project="datalab-user-projects-be57", bucket="parrots-projects-data"):
