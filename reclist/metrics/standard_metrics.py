@@ -56,6 +56,24 @@ def sample_misses_at_k(y_preds, y_test, x_test=None, k=3, size=3):
     return random.sample(misses, k=size)
 
 
+def sample_all_misses_at_k(y_preds, y_test, x_test=None, k=3, size=3):
+    misses = []
+    for idx, (_p, _y) in enumerate(zip(y_preds, y_test)):
+        missing_y = [item for item in _y if item not in _p[:k]]
+        if missing_y:
+            miss_info = {
+                'Y_TEST': missing_y,
+                'Y_PRED': _p[:k],
+            }
+            if x_test:
+                miss_info['X_TEST'] = [x_test[idx][0]]
+            misses.append(miss_info)
+
+    if len(misses) < size or size == -1:
+        return misses
+    return random.sample(misses, k=size)
+
+
 def hit_rate_at_k_nep(y_preds, y_test, k=3):
     y_test = [[k] for k in y_test]
     return hit_rate_at_k(y_preds, y_test, k=k)

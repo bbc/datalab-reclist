@@ -1,7 +1,11 @@
 import collections
+import json
+
 from reclist.abstractions import RecList, rec_test
 from typing import List
 import random
+
+from reclist.utils.config import load_ndjson_from_bucket, BBC_SOUNDS_METADATA
 
 
 class CoveoCartRecList(RecList):
@@ -369,8 +373,19 @@ class BBCSoundsSimilarItemRecList(RecList):
 
 class BBCSoundsRecList(RecList):
 
+    def __init__(self, model, dataset, y_preds, resource_metadata=None, get_model_vectors=False):
+        super().__init__(model, dataset, y_preds)
+        self.resource_metadata = resource_metadata
+        if get_model_vectors:
+            self.rec_model.load_vectors(resource_metadata)
+
     def resourceid_only(self, resource_ids):
         return [[x["resourceId"] for x in y] for y in resource_ids]
+
+    def load_resource_metadata(self):
+        # load resource metadata
+        resource_metadata = load_ndjson_from_bucket(filename=BBC_SOUNDS_METADATA)
+        self.resource_metadata = resource_metadata
 
     @rec_test(test_type='HR@10')
     def hit_rate_at_k(self):
@@ -431,9 +446,11 @@ class BBCSoundsRecList(RecList):
         return popularity_bias_at_k(self.resourceid_only(self._y_preds),
                                     self.resourceid_only(self._x_train),
                                     k=10)
+      
     @rec_test(test_type='Entropy@10')
     def shannon_entropy_at_k(self):
         """ Shannon Entropy is a measure of the information content/'randomness' of the prediction set.
+
 
         For more ‘random’ data, the Shannon entropy value is higher. For more deterministic signals, it is lower."""
         from reclist.metrics.novelty import shannon_entropy_at_k
@@ -518,8 +535,7 @@ class BBCSoundsRecList(RecList):
                                               self._y_test,
                                               self.resourceid_only(self._y_preds),
                                               k=10, user_feature='age_range',
-        debug=True)
-
+                                              debug=True)
 
     @rec_test(test_type='NDCG@10')
     def ndcg_at_k(self):
@@ -552,3 +568,99 @@ class BBCSoundsRecList(RecList):
         from reclist.metrics.novelty import personalisation_at_k
         return personalisation_at_k(self.resourceid_only(self._y_preds),
                                     k=10)
+      
+      
+    @rec_test(test_type='error_by_cosine_distance_all_items')
+    def error_by_cosine_distance_all(self):
+        """
+         Compute the distribution of prediction to ground truth error
+        """
+        from reclist.metrics.distance_metrics import error_by_cosine_distance_all_items
+        if not self.resource_metadata:
+            self.load_resource_metadata()
+        return error_by_cosine_distance_all_items(self.rec_model,
+                                                  self.resourceid_only(self._y_test),
+                                                  self.resourceid_only(self._y_preds), k=10, bins=25, debug=True,
+                                                  resource_metadata=self.resource_metadata)
+
+    @rec_test(test_type="genre_distribution_by_gender")
+    def genre_distribution_by_gender(self):
+        """
+        Compute the distribution of genres in predictions across gender in testing data
+        """
+        from reclist.metrics.metadata_distribution import genre_distribution_by_gender
+        if not self.resource_metadata:
+            self.load_resource_metadata()
+        return genre_distribution_by_gender(
+            self.resource_metadata,
+            self._y_test,
+            self._y_preds,
+            k=25,
+            top_genres=10,
+            debug=True
+        )
+
+    @rec_test(test_type="genre_distribution_by_agerange")
+    def genre_distribution_by_agerange(self):
+        """
+        Compute the distribution of genres in predictions across gender in testing data
+        """
+        from reclist.metrics.metadata_distribution import genre_distribution_by_agerange
+        if not self.resource_metadata:
+            self.load_resource_metadata()
+        return genre_distribution_by_agerange(
+            self.resource_metadata,
+            self._y_test,
+            self._y_preds,
+            k=25,
+            top_genres=10,
+            debug=True
+        )
+
+    @rec_test(test_type="masterbrand_distribution_by_gender")
+    def masterbrand_distribution_by_gender(self):
+        """
+        Compute the distribution of mastrbrands in predictions across gender in testing data
+        """
+        from reclist.metrics.metadata_distribution import masterbrand_distribution_by_gender
+        if not self.resource_metadata:
+            self.load_resource_metadata()
+        return masterbrand_distribution_by_gender(
+            self.resource_metadata,
+            self._y_test,
+            self._y_preds,
+            k=25,
+            top_masterbrands=5,
+            debug=True
+        )
+
+    @rec_test(test_type="masterbrand_distribution_by_agerange")
+    def masterbrand_distribution_by_agerange(self):
+        """
+        Compute the distribution of mastrbrands in predictions across age range in testing data
+        """
+        from reclist.metrics.metadata_distribution import masterbrand_distribution_by_agerange
+        if not self.resource_metadata:
+            self.load_resource_metadata()
+        return masterbrand_distribution_by_agerange(
+            self.resource_metadata,
+            self._y_test,
+            self._y_preds,
+            k=25,
+            top_masterbrands=5,
+            debug=True
+        )
+
+
+    @rec_test(test_type='freq_of_recommended_items_at_k')
+    def rec_items_distribution_at_k(self):
+        """
+        Computes the frequency of occurrence across recommended items
+        """
+        from reclist.metrics.standard_metrics import rec_items_distribution_at_k
+        return rec_items_distribution_at_k(
+            self.resourceid_only(self._y_preds),
+            k=10,
+            bin_width=100,
+            debug=True
+        )

@@ -1,13 +1,17 @@
-from scipy.spatial.distance import cosine
-import matplotlib.pyplot as plt
-from reclist.current import current
 import os
 import json
-import networkx as nx
-from networkx.algorithms.shortest_paths.generic import shortest_path
-from statistics import mean
-from reclist.metrics.standard_metrics import sample_misses_at_k, sample_hits_at_k
+
+import matplotlib.pyplot as plt
 import numpy as np
+import networkx as nx
+
+from networkx.algorithms.shortest_paths.generic import shortest_path
+from scipy.spatial.distance import cosine
+from sklearn.metrics.pairwise import cosine_distances
+
+from statistics import mean
+from reclist.current import current
+from reclist.metrics.standard_metrics import sample_misses_at_k, sample_hits_at_k, sample_all_misses_at_k
 
 
 def error_by_cosine_distance(model, y_test, y_preds, k=3, bins=25, debug=False):
@@ -41,6 +45,61 @@ def error_by_cosine_distance(model, y_test, y_preds, k=3, bins=25, debug=False):
     return {'mean': np.mean(cos_distances), 'histogram': histogram}
 
 
+def error_by_cosine_distance_all_items(model, y_test, y_preds, k=3, bins=25, debug=False, resource_metadata=None):
+    if not (hasattr(model.__class__, 'get_vector') and callable(getattr(model.__class__, 'get_vector'))):
+        error_msg = "Error : Model {} does not support retrieval of vector embeddings".format(model.__class__)
+        print(error_msg)
+        return error_msg
+
+    misses = sample_all_misses_at_k(y_preds, y_test, k=k, size=-1)
+    user_cos_distances = []
+    item_cos_distances = []
+    if resource_metadata:
+        model.enriched_items = resource_metadata
+    for m in misses:
+        if m['Y_PRED']:
+            vectors_test = [model.get_vector(pid) for pid in m['Y_TEST']]
+            vectors_pred = [model.get_vector(pid) for pid in m['Y_PRED']]
+            try:
+                if vectors_pred is not None and vectors_test is not None:
+                    cos_dist = cosine_distances(vectors_pred, vectors_test)
+                    user_cos_dist_avg = np.average(cos_dist)
+                    item_cos_dist_avg = np.average(cos_dist, axis=1)
+                    user_cos_distances.append(user_cos_dist_avg)
+                    item_cos_distances.append(item_cos_dist_avg)
+            except ValueError as e:
+                print(e)
+
+    user_histogram = np.histogram(user_cos_distances, bins=bins, density=False)
+    # cast to list
+    user_histogram = (user_histogram[0].tolist(), user_histogram[1].tolist())
+
+    # item distances
+    item_cos_distances_avg = np.concatenate(item_cos_distances)
+    item_histogram = np.histogram(item_cos_distances_avg, bins=bins, density=False)
+    # cast to list
+    item_histogram = (item_histogram[0].tolist(), item_histogram[1].tolist())
+
+    # debug / viz
+    if debug:
+        plt.hist(user_cos_distances, bins=bins)
+        plt.title(f'Recs to ground truth cosine distance ({model.vectors_type}), avg by user', fontsize=10)
+        plt.savefig(os.path.join(current.report_path,
+                                 'plots',
+                                 'distance_to_predictions_user_avg.png'))
+        plt.clf()
+
+        plt.hist(item_cos_distances_avg, bins=bins)
+        plt.title(f'Recs to ground truth cosine distance ({model.vectors_type}), avg by item', fontsize=10)
+        plt.savefig(os.path.join(current.report_path,
+                                 'plots',
+                                 'distance_to_predictions_item_avg.png'))
+        plt.clf()
+
+    return {'mean': np.average(user_cos_distances),
+            'user_histogram': user_histogram, 'item_histogram': item_histogram}
+
+
 def distance_to_query(model, x_test, y_test, y_preds, k=3, bins=25, debug=False):
     if not (hasattr(model.__class__, 'get_vector') and callable(getattr(model.__class__, 'get_vector'))):
         error_msg = "Error : Model {} does not support retrieval of vector embeddings".format(model.__class__)
@@ -51,7 +110,13 @@ def distance_to_query(model, x_test, y_test, y_preds, k=3, bins=25, debug=False)
     x_to_p_cos = []
     for m in misses:
         if m['Y_PRED']:
-            vector_x = model.get_vector(m['X_TEST'][0])
+            print(m['Y_TEST'])
+            try:
+                vector_x = model.get_vector(m['X_TEST'][0])
+            except KeyError:
+                vector_x = None
+                print('X_TEST not available')
+
             vector_y = model.get_vector(m['Y_TEST'][0])
             vectors_p = [model.get_vector(_) for _ in m['Y_PRED']]
             c_dists = []
