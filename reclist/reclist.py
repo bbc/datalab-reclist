@@ -446,7 +446,130 @@ class BBCSoundsRecList(RecList):
         return popularity_bias_at_k(self.resourceid_only(self._y_preds),
                                     self.resourceid_only(self._x_train),
                                     k=10)
+      
+    @rec_test(test_type='Entropy@10')
+    def shannon_entropy_at_k(self):
+        """ Shannon Entropy is a measure of the information content/'randomness' of the prediction set.
 
+
+        For more ‘random’ data, the Shannon entropy value is higher. For more deterministic signals, it is lower."""
+        from reclist.metrics.novelty import shannon_entropy_at_k
+        return shannon_entropy_at_k(self.resourceid_only(self._y_preds),
+                                    k=10)
+
+    @rec_test(test_type='Entropy_distribution_by_gender@10')
+    def shannon_entropy_at_k_gender(self):
+        """ Shannon Entropy is a measure of the information content/'randomness' of the prediction set.
+
+        For more ‘random’ data, the Shannon entropy value is higher. For more deterministic signals, it is lower."""
+        from reclist.metrics.novelty import shannon_entropy_at_k_user_differential
+        return shannon_entropy_at_k_user_differential(self._y_test,
+                                                      self.resourceid_only(self._y_preds),
+                                                      k=10, user_feature='gender',
+                                                      debug=True)
+
+    @rec_test(test_type='GiniIndex@10')
+    def gini_index_at_k(self):
+        """ The Gini Index is a measure of across k recommendations for n users of
+        how equally recommendations are distributed across all items.
+          - High values G~1 mean that there is a large inequality across
+            items in how often they are recommended
+          - G~0 means that all items are recommended roughly the same
+            amount across the set of users
+        This is a measure of exposure bias resulting from the recommender"""
+        from reclist.metrics.novelty import gini_index_at_k
+        return gini_index_at_k(self.resourceid_only(self._y_preds),
+                               self.product_data,
+                               k=10)
+
+    @rec_test(test_type='GiniIndex_distribution_by_age_range@10')
+    def gini_index_at_k_age_range(self):
+        """ The Gini Index is a measure of across k recommendations for n users of
+        how equally recommendations are distributed across all items.
+          - High values G~1 mean that there is a large inequality across
+            items in how often they are recommended
+          - G~0 means that all items are recommended roughly the same
+            amount across the set of users
+        This is a measure of exposure bias resulting from the recommender"""
+        from reclist.metrics.novelty import gini_index_at_k_user_differential
+        return gini_index_at_k_user_differential(self.resourceid_only(self._y_preds),
+                                                 self._y_test,
+                                                 self.product_data,
+                                                 k=10,
+                                                 debug=True)
+
+    @rec_test(test_type='Coverage@10')
+    def coverage_at_k(self):
+        """
+        Coverage is the proportion of all possible candidate items which the RS
+        recommends based on a set of sessions
+        """
+        from reclist.metrics.standard_metrics import coverage_at_k
+        return coverage_at_k(self.resourceid_only(self._y_preds),
+                             {k: None for k in self.product_data},
+                             k=10)
+
+    @rec_test(test_type='Novelty@10')
+    def novelty_at_k(self):
+        """
+        Novelty is the propensity of a recommender to recommend itms that a user has little or no knowledge about.
+        Here we use a variation on eq 9. of Silveira et. al. [2017], where popularity is normalised by the number
+        of users in the training set. Item popularity is used a proxy for user knowledge. A higher novelty recommender
+        recommends less popular items more frequently
+        """
+        from reclist.metrics.novelty import novelty_at_k
+        return novelty_at_k(self.resourceid_only(self._y_preds),
+                            self._x_train,
+                            k=10)
+
+    @rec_test(test_type='Novelty@10')
+    def novelty_at_k_age_range(self):
+        """
+        Novelty is the propensity of a recommender to recommend itms that a user has little or no knowledge about.
+        Here we use a variation on eq 9. of Silveira et. al. [2017], where popularity is normalised by the number
+        of users in the training set. Item popularity is used a proxy for user knowledge. A higher novelty recommender
+        recommends less popular items more frequently
+        """
+        from reclist.metrics.novelty import novelty_at_k_user_differential
+        return novelty_at_k_user_differential(self._x_train,
+                                              self._y_test,
+                                              self.resourceid_only(self._y_preds),
+                                              k=10, user_feature='age_range',
+                                              debug=True)
+
+    @rec_test(test_type='NDCG@10')
+    def ndcg_at_k(self):
+        """
+        Normalised Discounted Cumulative Gain @ 10
+        """
+        from reclist.metrics.standard_metrics import ndcg_at_k
+        return ndcg_at_k(self.resourceid_only(self._y_preds),
+                         self.resourceid_only(self._y_test),
+                         k=10)
+
+    @rec_test(test_type='NDCG@10')
+    def ndcg_at_k_age_range(self):
+        """
+        Normalised Discounted Cumulative Gain @ 10
+        """
+        from reclist.metrics.standard_metrics import ndcg_at_k_user_differential
+        return ndcg_at_k_user_differential(self.resourceid_only(self._y_preds),
+                                           self.resourceid_only(self._y_test),
+                                           self._y_test,
+                                           k=10, user_feature='age_range')
+
+    @rec_test(test_type='Personalisation@10')
+    def personalisation_at_k(self):
+        """
+        Aggregated difference measure between user recommendations (unordered).
+        Pers@k=1 -> Each recommendation list shares no items with any others (fully disjoint)
+        Pers@k=0 -> All recommendation lists are the same for every user
+        """
+        from reclist.metrics.novelty import personalisation_at_k
+        return personalisation_at_k(self.resourceid_only(self._y_preds),
+                                    k=10)
+      
+      
     @rec_test(test_type='error_by_cosine_distance_all_items')
     def error_by_cosine_distance_all(self):
         """

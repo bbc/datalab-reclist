@@ -154,6 +154,53 @@ def recall_at_k(y_preds, y_test, k=3):
     return np.average(recall_ls)
 
 
+def ndcg_at_k(y_preds, y_test, k=3):
+    import sklearn.metrics
+    results = list(reversed(list(range(1, k+1))))
+    user_ndcgs = []
+    for _p, _y in zip(y_preds, y_test):
+        relevance = []
+        for j in _p[:k]:
+            if j in _y:
+                relevance.append(1)
+            else:
+                relevance.append(0)
+
+        # 0 pad relevance to k if there are fewer than k predictions
+        if len(relevance) < k:
+            relevance += [0]*(k-len(relevance))
+
+        user_ndcgs.append(sklearn.metrics.ndcg_score([relevance], [results]))
+    return np.average(np.asarray(user_ndcgs))
+
+def ndcg_at_k_user_differential(y_preds, y_test, y_test_full, k=3,
+                                user_feature='gender'):
+    pred_breakdown, test_breakdown = _breakdown_preds_by_user_feature(y_test_full, y_preds, y_test,
+                                                                      user_feature=user_feature)
+    return _apply_func_to_breakdown(ndcg_at_k, pred_breakdown, test_breakdown, k=k)
+
+
+def _breakdown_preds_by_user_feature(y_test, y_preds, y_test_ids, user_feature='gender'):
+    from collections import defaultdict
+    pred_breakdown = defaultdict(list)
+    test_breakdown = defaultdict(list)
+    for _t, _p, _t_ids in zip(y_test, y_preds, y_test_ids):
+        target_user_feature = _t[0][user_feature]
+        if not target_user_feature:
+            target_user_feature = 'unknown'
+        pred_breakdown[target_user_feature].append(_p)
+        test_breakdown[target_user_feature].append(_t_ids)
+    return pred_breakdown, test_breakdown
+
+
+def _apply_func_to_breakdown(func, pred_breakdown, test_breakdown, *args, **kwargs):
+    retval = {}
+    for key in sorted(pred_breakdown.keys()):
+        retval[key] = func(pred_breakdown[key], test_breakdown[key], *args, **kwargs)
+    return retval
+
+
+
 def rec_items_distribution_at_k(y_preds, k=3, bin_width=100, debug=True):
     def _calculate_hist(frequencies, bins):
         """ Works out the counts of items in each bucket """

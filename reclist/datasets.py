@@ -7,7 +7,7 @@ from reclist.utils.config import *
 from itertools import groupby
 
 
-class BBCSoundsSampledDataset(RecDataset):
+class BBCSoundsDataset(RecDataset):
     """
     BBC Sounds September 2021 Dataset
 
@@ -62,9 +62,9 @@ class BBCSoundsDataset(RecDataset):
         train_filepath = os.path.join(cache_dir, "train.ndjson")
 
         if not os.path.exists(train_filepath) or self.force_download:
-            download_file(BBC_SOUNDS_TRAIN_GCP_URL, train_filepath)
+            download_with_progress(BBC_SOUNDS_TRAIN_GCP_URL, train_filepath)
         if not os.path.exists(test_filepath) or self.force_download:
-            download_file(BBC_SOUNDS_TEST_GCP_URL, test_filepath)
+            download_with_progress(BBC_SOUNDS_TEST_GCP_URL, test_filepath)
 
         def _format_data(filename):
             """
