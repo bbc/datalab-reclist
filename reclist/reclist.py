@@ -446,7 +446,7 @@ class BBCSoundsRecList(RecList):
         return popularity_bias_at_k(self.resourceid_only(self._y_preds),
                                     self.resourceid_only(self._x_train),
                                     k=10)
-      
+
     @rec_test(test_type='Entropy@10')
     def shannon_entropy_at_k(self):
         """ Shannon Entropy is a measure of the information content/'randomness' of the prediction set.
@@ -468,46 +468,46 @@ class BBCSoundsRecList(RecList):
                                                       k=10, user_feature='gender',
                                                       debug=True)
 
-    @rec_test(test_type='GiniIndex@10')
-    def gini_index_at_k(self):
-        """ The Gini Index is a measure of across k recommendations for n users of
-        how equally recommendations are distributed across all items.
-          - High values G~1 mean that there is a large inequality across
-            items in how often they are recommended
-          - G~0 means that all items are recommended roughly the same
-            amount across the set of users
-        This is a measure of exposure bias resulting from the recommender"""
-        from reclist.metrics.novelty import gini_index_at_k
-        return gini_index_at_k(self.resourceid_only(self._y_preds),
-                               self.product_data,
-                               k=10)
+    # @rec_test(test_type='GiniIndex@10')
+    # def gini_index_at_k(self):
+    #     """ The Gini Index is a measure of across k recommendations for n users of
+    #     how equally recommendations are distributed across all items.
+    #       - High values G~1 mean that there is a large inequality across
+    #         items in how often they are recommended
+    #       - G~0 means that all items are recommended roughly the same
+    #         amount across the set of users
+    #     This is a measure of exposure bias resulting from the recommender"""
+    #     from reclist.metrics.novelty import gini_index_at_k
+    #     return gini_index_at_k(self.resourceid_only(self._y_preds),
+    #                            self.product_data,
+    #                            k=10)
+    #
+    # @rec_test(test_type='GiniIndex_distribution_by_age_range@10')
+    # def gini_index_at_k_age_range(self):
+    #     """ The Gini Index is a measure of across k recommendations for n users of
+    #     how equally recommendations are distributed across all items.
+    #       - High values G~1 mean that there is a large inequality across
+    #         items in how often they are recommended
+    #       - G~0 means that all items are recommended roughly the same
+    #         amount across the set of users
+    #     This is a measure of exposure bias resulting from the recommender"""
+    #     from reclist.metrics.novelty import gini_index_at_k_user_differential
+    #     return gini_index_at_k_user_differential(self.resourceid_only(self._y_preds),
+    #                                              self._y_test,
+    #                                              self.product_data,
+    #                                              k=10,
+    #                                              debug=True)
 
-    @rec_test(test_type='GiniIndex_distribution_by_age_range@10')
-    def gini_index_at_k_age_range(self):
-        """ The Gini Index is a measure of across k recommendations for n users of
-        how equally recommendations are distributed across all items.
-          - High values G~1 mean that there is a large inequality across
-            items in how often they are recommended
-          - G~0 means that all items are recommended roughly the same
-            amount across the set of users
-        This is a measure of exposure bias resulting from the recommender"""
-        from reclist.metrics.novelty import gini_index_at_k_user_differential
-        return gini_index_at_k_user_differential(self.resourceid_only(self._y_preds),
-                                                 self._y_test,
-                                                 self.product_data,
-                                                 k=10,
-                                                 debug=True)
-
-    @rec_test(test_type='Coverage@10')
-    def coverage_at_k(self):
-        """
-        Coverage is the proportion of all possible candidate items which the RS
-        recommends based on a set of sessions
-        """
-        from reclist.metrics.standard_metrics import coverage_at_k
-        return coverage_at_k(self.resourceid_only(self._y_preds),
-                             {k: None for k in self.product_data},
-                             k=10)
+    # @rec_test(test_type='Coverage@10')
+    # def coverage_at_k(self):
+    #     """
+    #     Coverage is the proportion of all possible candidate items which the RS
+    #     recommends based on a set of sessions
+    #     """
+    #     from reclist.metrics.standard_metrics import coverage_at_k
+    #     return coverage_at_k(self.resourceid_only(self._y_preds),
+    #                          {k: None for k in self.product_data},
+    #                          k=10)
 
     @rec_test(test_type='Novelty@10')
     def novelty_at_k(self):
@@ -568,8 +568,8 @@ class BBCSoundsRecList(RecList):
         from reclist.metrics.novelty import personalisation_at_k
         return personalisation_at_k(self.resourceid_only(self._y_preds),
                                     k=10)
-      
-      
+
+
     @rec_test(test_type='error_by_cosine_distance_all_items')
     def error_by_cosine_distance_all(self):
         """

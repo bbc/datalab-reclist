@@ -1,13 +1,12 @@
-import json
 import tempfile
 import zipfile
-import os
+
 from reclist.abstractions import RecDataset
 from reclist.utils.config import *
 from itertools import groupby
 
 
-class BBCSoundsDataset(RecDataset):
+class BBCSoundsSampledDataset(RecDataset):
     """
     BBC Sounds September 2021 Dataset
 
